@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UPTIME∞ — The Cloud High Availability Playbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #ff2d2d;
+    --amber: #ffaa00;
+    --green: #00e676;
+    --blue: #00b4ff;
+    --dark: #0a0a0f;
+    --card: #111118;
+    --border: #222233;
+    --text: #e8e8f0;
+    --muted: #6666aa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 5vw;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(255,45,45,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 10% 80%, rgba(0,180,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .alert-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,45,45,0.15);
+    border: 1px solid rgba(255,45,45,0.4);
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    width: fit-content;
+  }
+
+  .blink { animation: blink 1.2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 10vw, 130px);
+    line-height: 0.92;
+    letter-spacing: 0.02em;
+    margin-bottom: 24px;
+  }
+
+  h1 .accent { color: var(--red); }
+  h1 .accent2 { color: var(--blue); }
+
+  .hero-sub {
+    font-size: clamp(14px, 2vw, 18px);
+    color: var(--muted);
+    max-width: 580px;
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+
+  .incident-box {
+    background: rgba(255,170,0,0.08);
+    border-left: 3px solid var(--amber);
+    padding: 16px 20px;
+    max-width: 620px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--amber);
+    line-height: 1.6;
+  }
+
+  .incident-box .label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: 6px;
+  }
+
+  /* SECTION */
+  section {
+    padding: 80px 5vw;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(32px, 5vw, 64px);
+    letter-spacing: 0.02em;
+    margin-bottom: 40px;
+    line-height: 1;
+  }
+
+  /* CLOUD PROVIDER CARDS */
+  .cloud-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .cloud-card {
+    background: var(--card);
+    padding: 28px;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cloud-card:hover { background: #161620; }
+
+  .cloud-card .provider-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .cloud-card .tagline {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 20px;
+  }
+
+  .cloud-card .regions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .cloud-card .num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    line-height: 1;
+  }
+
+  .cloud-card .num-label { font-size: 12px; color: var(--muted); }
+
+  .cloud-card .features {
+    list-style: none;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 2;
+  }
+
+  .cloud-card .features li::before {
+    content: '→ ';
+    color: var(--blue);
+  }
+
+  .cloud-card .pill {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+
+  .aws .num { color: #ff9900; }
+  .aws .pill { background: rgba(255,153,0,0.15); color: #ff9900; border: 1px solid rgba(255,153,0,0.3); }
+
+  .azure .num { color: #0078d4; }
+  .azure .pill { background: rgba(0,120,212,0.15); color: #0078d4; border: 1px solid rgba(0,120,212,0.3); }
+
+  .gcp .num { color: #34a853; }
+  .gcp .pill { background: rgba(52,168,83,0.15); color: #34a853; border: 1px solid rgba(52,168,83,0.3); }
+
+  .ali .num { color: #ff6a00; }
+  .ali .pill { background: rgba(255,106,0,0.15); color: #ff6a00; border: 1px solid rgba(255,106,0,0.3); }
+
+  .oci .num { color: #f80000; }
+  .oci .pill { background: rgba(248,0,0,0.15); color: #f80000; border: 1px solid rgba(248,0,0,0.3); }
+
+  .ibm .num { color: #be95ff; }
+  .ibm .pill { background: rgba(190,149,255,0.15); color: #be95ff; border: 1px solid rgba(190,149,255,0.3); }
+
+  /* HA STRATEGIES */
+  .strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .strategy-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 28px;
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .strategy-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-2px);
+  }
+
+  .strategy-card .icon {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  .strategy-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
+  .strategy-card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  .strategy-card .rto-rpo {
+    display: flex;
+    gap: 16px;
+  }
+
+  .metric {
+    flex: 1;
+    background: rgba(255,255,255,0.03);
+    padding: 10px;
+    text-align: center;
+  }
+
+  .metric .val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  .metric .lbl {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* DECISION TOOL */
+  .decision-tool {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 40px;
+    max-width: 800px;
+  }
+
+  .decision-tool h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.05em;
+    margin-bottom: 24px;
+  }
+
+  .q-row {
+    margin-bottom: 24px;
+  }
+
+  .q-row label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .q-row select, .q-row input[type=range] {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    width: 100%;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .q-row select:focus { outline: 1px solid var(--blue); }
+
+  .range-row { display: flex; align-items: center; gap: 12px; }
+  .range-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--blue);
+    min-width: 60px;
+  }
+
+  input[type=range] {
+    padding: 0;
+    height: 4px;
+    accent-color: var(--blue);
+  }
+
+  .recommend-btn {
+    background: var(--blue);
+    color: #000;
+    border: none;
+    padding: 14px 32px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 8px;
+  }
+
+  .recommend-btn:hover { background: #33c4ff; transform: translateY(-1px); }
+
+  .result-box {
+    margin-top: 24px;
+    background: rgba(0,180,255,0.06);
+    border: 1px solid rgba(0,180,255,0.3);
+    padding: 24px;
+    display: none;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .result-box.show { display: block; }
+
+  .result-box h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--blue);
+    margin-bottom: 12px;
+  }
+
+  .result-box ul {
+    list-style: none;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text);
+  }
+
+  .result-box ul li::before { content: '✦ '; color: var(--blue); }
+
+  /* CHECKLIST */
+  .checklist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    list-style: none;
+  }
+
+  .checklist li {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+
+  .checklist li:hover { border-color: var(--green); }
+  .checklist li.checked { border-color: var(--green); background: rgba(0,230,118,0.05); }
+
+  .check-icon {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    transition: all 0.2s;
+    font-size: 11px;
+  }
+
+  .checklist li.checked .check-icon {
+    background: var(--green);
+    border-color: var(--green);
+    color: #000;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 40px 5vw;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  footer .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  footer p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+  }
+
+  .tab.active { color: var(--text); border-bottom-color: var(--blue); }
+  .tab:hover { color: var(--text); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+
+  /* Scroll animations */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 600px) {
+    .decision-tool { padding: 24px; }
+    .tabs { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- CREATED BY -->
+<div style="width:100%;background:#111118;border-bottom:1px solid #222233;padding:10px 5vw;display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#6666aa;text-transform:uppercase;">
+  <span style="color:#00b4ff">✦</span>
+  Created by <span style="color:#e8e8f0;font-weight:600;margin-left:4px">Umesh Ghate</span>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="alert-bar">
+    <span class="blink">●</span>
+    UPTIME∞ — THE CLOUD HIGH AVAILABILITY PLAYBOOK
+  </div>
+  <h1>
+    <span class="accent">STAY</span><br>
+    ALIVE<br>
+    <span class="accent2">ALWAYS</span>
+  </h1>
+  <p class="hero-sub">
+    Disasters don't ask permission — power cuts, network failures, natural events, and physical incidents 
+    can take down any single data center at any time. 
+    This is your definitive guide to building cloud infrastructure that never goes down.
+  </p>
+  <div class="incident-box">
+    <div class="label">💡 Why This Matters</div>
+    Real-world incidents — from undersea cable cuts to power outages and physical events — 
+    have proven that any single region, from any provider, can go dark without warning. 
+    Customers on multi-region architectures stay live. Everyone else scrambles. 
+    This playbook puts you firmly in the first group.
+  </div>
+</div>
+
+<!-- CLOUD PROVIDERS -->
+<section class="reveal">
+  <div class="section-tag">// Step 01 — Choose Your Cloud</div>
+  <h2>All Cloud Options</h2>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('hyperscaler')">Hyperscalers</div>
+    <div class="tab" onclick="switchTab('regional')">Regional / Sovereign</div>
+    <div class="tab" onclick="switchTab('multicloud')">Multi-Cloud Tools</div>
+  </div>
+
+  <div id="hyperscaler" class="tab-content active cloud-grid">
+    <div class="cloud-card aws">
+      <div class="pill">Most Mature</div>
+      <div class="provider-logo">Amazon Web Services</div>
+      <div class="tagline">// aws.amazon.com</div>
+      <div class="regions">
+        <div>
+          <div class="num">33</div>
+          <div class="num-label">Regions</div>
+        </div>
+        <div style="margin-left:20px">
+          <div class="num">105</div>
+          <div class="num-label">Availability Zones</div>
+        </div>
+      </div>
+      <ul class="features">
+        <li>Route 53 Latency / Health Routing</li>
+        <li>Global Accelerator</li>
+        <li>Multi-AZ RDS / Aurora Global DB</li>
+        <li>S3 Cross-Region Replication</li>
+        <li>CloudFront (600+ PoPs)</li>
+      </ul>
+    </div>
+    <div class="cloud-card azure">
+      <div class="pill">Enterprise Preferred</div>
+      <div class="provider-logo">Microsoft Azure</div>
+      <div class="tagline">// azure.microsoft.com</div>
+      <div class="regions">
+        <div>
+          <div class="num">60+</div>
+          <div class="num-label">Regions</div>
+        </div>
+        <div style="margin-left:20px">
+          <div class="num">200+</div>
+          <div class="num-label">Data Centers</div>
+        </div>
+      </div>
+      <ul class="features">
+        <li>Azure Traffic Manager</li>
+        <li>Availability Zones (99.99% SLA)</li>
+        <li>Azure Geo-Redundant Storage</li>
+        <li>Cosmos DB Multi-Region Writes</li>
+        <li>Azure Front Door (WAF + CDN)</li>
+      </ul>
+    </div>
+    <div class="cloud-card gcp">
+      <div class="pill">Best Networking</div>
+      <div class="provider-logo">Google Cloud</div>
+      <div class="tagline">// cloud.google.com</div>
+      <div class="regions">
+        <div>
+          <div class="num">40+</div>
+          <div class="num-label">Regions</div>
+        </div>
+        <div style="margin-left:20px">
+          <div class="num">121</div>
+          <div class="num-label">Zones</div>
+        </div>
+      </div>
+      <ul class="features">
+        <li>Premium Tier Global Backbone</li>
+        <li>Cloud Spanner (99.999% SLA)</li>
+        <li>Cloud Load Balancing (Anycast)</li>
+        <li>Multi-Regional GCS Buckets</li>
+        <li>Cloud DNS with geo-routing</li>
+      </ul>
+    </div>
+    <div class="cloud-card ali">
+      <div class="pill">MENA / APAC Leader</div>
+      <div class="provider-logo">Alibaba Cloud</div>
+      <div class="tagline">// alibabacloud.com</div>
+      <div class="regions">
+        <div>
+          <div class="num">30</div>
+          <div class="num-label">Regions</div>
+        </div>
+        <div style="margin-left:20px">
+          <div class="num">90+</div>
+          <div class="num-label">Zones</div>
+        </div>
+      </div>
+      <ul class="features">
+        <li>Global Traffic Manager (GTM)</li>
+        <li>ApsaraDB cross-region sync</li>
+        <li>Alibaba CDN (2800+ nodes)</li>
+        <li>OSS Cross-Region Replication</li>
+        <li>Anti-DDoS Premium</li>
+      </ul>
+    </div>
+    <div class="cloud-card oci">
+      <div class="pill">Low Cost Egress</div>
+      <div class="provider-logo">Oracle Cloud</div>
+      <div class="tagline">// oracle.com/cloud</div>
+      <div class="regions">
+        <div>
+          <div class="num">46</div>
+          <div class="num-label">Regions</div>
+        </div>
+        <div style="margin-left:20px">
+          <div class="num">$0</div>
+          <div class="num-label">Egress Fees</div>
+        </div>
+      </div>
+      <ul class="features">
+        <li>Autonomous DB Data Guard</li>
+        <li>Traffic Management (geo-steering)</li>
+        <li>Object Storage Cross-Region</li>
+        <li>Fault Domains within ADs</li>
+        <li>Free outbound data transfer</li>
+      </ul>
+    </div>
+    <div class="cloud-card ibm">
+      <div class="pill">Regulated Industries</div>
+      <div class="provider-logo">IBM Cloud</div>
+      <div class="tagline">// ibm.com/cloud</div>
+      <div class="regions">
+        <div>
+          <div class="num">9</div>
+          <div class="num-label">MZRs</div>
+        </div>
+        <div style="margin-left:20px">
+          <div class="num">FIPS</div>
+          <div class="num-label">140-2 Compliant</div>
+        </div>
+      </div>
+      <ul class="features">
+        <li>IBM Global Load Balancer</li>
+        <li>Db2 HADR with failover</li>
+        <li>IBM Cloud Internet Services (CDN)</li>
+        <li>Key Protect BYOK</li>
+        <li>Financial Services Cloud</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="regional" class="tab-content cloud-grid" style="display:none">
+    <div class="cloud-card" style="--num-color:#e63946">
+      <div class="pill" style="background:rgba(230,57,70,0.15);color:#e63946;border:1px solid rgba(230,57,70,0.3)">Middle East</div>
+      <div class="provider-logo" style="color:#e63946">Huawei Cloud</div>
+      <div class="tagline">// huaweicloud.com</div>
+      <ul class="features" style="margin-top:16px">
+        <li>Riyadh, Dubai, Doha regions</li>
+        <li>OceanStor cross-AZ replication</li>
+        <li>CBH bastion high availability</li>
+        <li>UCS + CSS sovereign data</li>
+      </ul>
+    </div>
+    <div class="cloud-card">
+      <div class="pill" style="background:rgba(100,200,100,0.12);color:#64c864;border:1px solid rgba(100,200,100,0.3)">Europe Sovereign</div>
+      <div class="provider-logo" style="color:#64c864">OVHcloud</div>
+      <div class="tagline">// ovhcloud.com</div>
+      <ul class="features" style="margin-top:16px">
+        <li>GDPR-by-design architecture</li>
+        <li>vRack private backbone</li>
+        <li>Anti-DDoS VAC scrubbing</li>
+        <li>Cross-DC live migration</li>
+      </ul>
+    </div>
+    <div class="cloud-card">
+      <div class="pill" style="background:rgba(150,100,255,0.12);color:#9664ff;border:1px solid rgba(150,100,255,0.3)">Low Latency PaaS</div>
+      <div class="provider-logo" style="color:#9664ff">Cloudflare Workers</div>
+      <div class="tagline">// cloudflare.com</div>
+      <ul class="features" style="margin-top:16px">
+        <li>330 PoPs — true edge compute</li>
+        <li>Durable Objects (CRDT state)</li>
+        <li>R2 zero-egress object store</li>
+        <li>Pages + Workers KV global</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="multicloud" class="tab-content cloud-grid" style="display:none">
+    <div class="cloud-card">
+      <div class="pill" style="background:rgba(0,230,118,0.1);color:#00e676;border:1px solid rgba(0,230,118,0.3)">Kubernetes HA</div>
+      <div class="provider-logo" style="color:#00e676">Anthos / Rancher / Tanzu</div>
+      <div class="tagline">// multi-cluster federation</div>
+      <ul class="features" style="margin-top:16px">
+        <li>Federated Kubernetes clusters</li>
+        <li>Cross-cloud service mesh (Istio)</li>
+        <li>GitOps-driven failover (ArgoCD)</li>
+        <li>Unified policy via OPA/Gatekeeper</li>
+      </ul>
+    </div>
+    <div class="cloud-card">
+      <div class="pill" style="background:rgba(0,180,255,0.1);color:#00b4ff;border:1px solid rgba(0,180,255,0.3)">DNS Failover</div>
+      <div class="provider-logo" style="color:#00b4ff">Cloudflare / NS1 / Route53</div>
+      <div class="tagline">// intelligent DNS routing</div>
+      <ul class="features" style="margin-top:16px">
+        <li>Health-check based failover</li>
+        <li>Geo-routing (country / latency)</li>
+        <li>Weighted round-robin LB</li>
+        <li>Anycast for DDoS resilience</li>
+      </ul>
+    </div>
+    <div class="cloud-card">
+      <div class="pill" style="background:rgba(255,170,0,0.1);color:#ffaa00;border:1px solid rgba(255,170,0,0.3)">IaC Portability</div>
+      <div class="provider-logo" style="color:#ffaa00">Terraform / Pulumi</div>
+      <div class="tagline">// infrastructure as code</div>
+      <ul class="features" style="margin-top:16px">
+        <li>Cloud-agnostic modules</li>
+        <li>State replication across providers</li>
+        <li>Automated DR runbooks</li>
+        <li>Policy-as-code (Sentinel / OPA)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- HA STRATEGIES -->
+<section class="reveal">
+  <div class="section-tag">// Step 02 — Architecture Patterns</div>
+  <h2>High Availability<br>Strategies</h2>
+  <div class="strategy-grid">
+
+    <div class="strategy-card">
+      <div class="icon">🌍</div>
+      <h3>Multi-Region Active-Active</h3>
+      <p>Traffic simultaneously served from multiple regions. Any region can handle 100% of load. Zero failover time — there is nothing to fail over to because both are always live.</p>
+      <div class="rto-rpo">
+        <div class="metric"><div class="val">0s</div><div class="lbl">RTO</div></div>
+        <div class="metric"><div class="val">~0s</div><div class="lbl">RPO</div></div>
+        <div class="metric"><div class="val">High</div><div class="lbl">Cost</div></div>
+      </div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="icon">🔁</div>
+      <h3>Multi-Region Active-Passive</h3>
+      <p>Primary region handles all traffic. Standby region is kept warm with replicated data. On failure, DNS or load balancer cuts over to standby within minutes.</p>
+      <div class="rto-rpo">
+        <div class="metric"><div class="val">&lt;5min</div><div class="lbl">RTO</div></div>
+        <div class="metric"><div class="val">&lt;1min</div><div class="lbl">RPO</div></div>
+        <div class="metric"><div class="val">Medium</div><div class="lbl">Cost</div></div>
+      </div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="icon">🏗️</div>
+      <h3>Multi-AZ (Same Region)</h3>
+      <p>Spread across 3 availability zones in one region. Handles facility-level failures — power, cooling, networking. Does NOT protect against full region outages like the Dubai incident.</p>
+      <div class="rto-rpo">
+        <div class="metric"><div class="val">&lt;60s</div><div class="lbl">RTO</div></div>
+        <div class="metric"><div class="val">0s</div><div class="lbl">RPO</div></div>
+        <div class="metric"><div class="val">Low</div><div class="lbl">Cost</div></div>
+      </div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="icon">🛡️</div>
+      <h3>Pilot Light (Cold DR)</h3>
+      <p>Minimal footprint always running in DR region — just the core database and AMIs/images. On disaster, spin up full environment automatically via IaC in 15-30 minutes.</p>
+      <div class="rto-rpo">
+        <div class="metric"><div class="val">30min</div><div class="lbl">RTO</div></div>
+        <div class="metric"><div class="val">&lt;15min</div><div class="lbl">RPO</div></div>
+        <div class="metric"><div class="val">Low</div><div class="lbl">Cost</div></div>
+      </div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="icon">⚡</div>
+      <h3>Warm Standby</h3>
+      <p>Scaled-down but fully operational copy always running in DR region. Can handle reduced traffic immediately; scale up in minutes. Middle ground between cost and speed.</p>
+      <div class="rto-rpo">
+        <div class="metric"><div class="val">&lt;10min</div><div class="lbl">RTO</div></div>
+        <div class="metric"><div class="val">&lt;5min</div><div class="lbl">RPO</div></div>
+        <div class="metric"><div class="val">Medium</div><div class="lbl">Cost</div></div>
+      </div>
+    </div>
+
+    <div class="strategy-card">
+      <div class="icon">☁️</div>
+      <h3>Multi-Cloud HA</h3>
+      <p>Split workloads across AWS + Azure or GCP. Immune to provider-wide incidents. Adds operational complexity but eliminates vendor lock-in and cloud-provider risk entirely.</p>
+      <div class="rto-rpo">
+        <div class="metric"><div class="val">0s</div><div class="lbl">RTO</div></div>
+        <div class="metric"><div class="val">~0s</div><div class="lbl">RPO</div></div>
+        <div class="metric"><div class="val">Highest</div><div class="lbl">Cost</div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- INTERACTIVE DECISION TOOL -->
+<section class="reveal">
+  <div class="section-tag">// Step 03 — Get Your Recommendation</div>
+  <h2>Find Your<br>HA Strategy</h2>
+
+  <div class="decision-tool">
+    <h3>Answer 4 Questions →</h3>
+
+    <div class="q-row">
+      <label>What are you provisioning?</label>
+      <select id="q-workload">
+        <option value="">— Select workload type —</option>
+        <option value="web">Web Application / API</option>
+        <option value="db">Database / Data Platform</option>
+        <option value="ml">AI / ML Workloads</option>
+        <option value="storage">Object Storage / Files</option>
+        <option value="streaming">Streaming / Messaging</option>
+        <option value="iot">IoT / Edge Devices</option>
+      </select>
+    </div>
+
+    <div class="q-row">
+      <label>Acceptable downtime (RTO)?</label>
+      <select id="q-rto">
+        <option value="zero">Zero — every second costs money</option>
+        <option value="minutes">Under 5 minutes</option>
+        <option value="30min">Under 30 minutes</option>
+        <option value="hours">A few hours is acceptable</option>
+      </select>
+    </div>
+
+    <div class="q-row">
+      <label>Data loss tolerance (RPO)?</label>
+      <select id="q-rpo">
+        <option value="zero">Zero — no data loss acceptable</option>
+        <option value="seconds">Seconds</option>
+        <option value="minutes">Minutes</option>
+        <option value="hours">Hours</option>
+      </select>
+    </div>
+
+    <div class="q-row">
+      <label>Monthly budget headroom</label>
+      <div class="range-row">
+        <input type="range" id="q-budget" min="10" max="100" value="40" oninput="document.getElementById('budget-val').textContent=this.value+'%'">
+        <div class="range-val" id="budget-val">40%</div>
+        <span style="font-size:11px;color:var(--muted)">extra for HA</span>
+      </div>
+    </div>
+
+    <button class="recommend-btn" onclick="recommend()">GENERATE RECOMMENDATION →</button>
+
+    <div class="result-box" id="result-box">
+      <h4 id="result-title">Your HA Strategy</h4>
+      <ul id="result-list"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- CHECKLIST -->
+<section class="reveal">
+  <div class="section-tag">// Step 04 — Implementation Checklist</div>
+  <h2>HA Readiness<br>Checklist</h2>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:28px;max-width:600px">Click each item as you implement it. This is the minimum viable HA setup that would have kept you online during the Dubai incident.</p>
+
+  <ul class="checklist" id="checklist">
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Deploy across <strong>minimum 3 availability zones</strong> in your primary region</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Enable <strong>cross-region replication</strong> for all databases (RDS Multi-AZ + read replica in secondary region)</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Configure <strong>health-check based DNS failover</strong> (Route53 / Cloudflare) pointing to secondary region</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Store all infrastructure as <strong>IaC (Terraform/CDK)</strong> so DR environment can be spun up in minutes</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Enable <strong>S3/GCS/Azure Blob cross-region replication</strong> with versioning on all critical buckets</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Set up a <strong>CDN (CloudFront/Fastly/Cloudflare)</strong> to serve static assets even if origin is down</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Implement <strong>circuit breakers and retries</strong> in application code (Netflix Hystrix / Resilience4j)</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Configure <strong>automated failover runbooks</strong> and test them quarterly via chaos engineering</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Set up <strong>cross-region monitoring dashboards</strong> (Datadog / Grafana) with PagerDuty alerting</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Document <strong>RTO/RPO targets</strong> and validate them with real DR drills — not just on paper</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Enable <strong>multi-region message queues</strong> (SQS FIFO / Kafka MirrorMaker) for async workloads</div></li>
+    <li onclick="toggleCheck(this)"><div class="check-icon"></div><div>Review <strong>cloud provider SLA</strong> — 99.99% ≠ zero downtime; budget for the gap</div></li>
+  </ul>
+
+  <div style="margin-top:24px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">
+    Progress: <span id="progress" style="color:var(--green)">0</span> / 12 items completed
+  </div>
+</section>
+
+<footer>
+  <div class="brand">UPTIME∞</div>
+  <p>Because resilience is not optional — build for the failure you haven't imagined yet.</p>
+</footer>
+
+<script>
+// Tab switching
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => { c.classList.remove('active'); c.style.display = 'none'; });
+  event.target.classList.add('active');
+  const el = document.getElementById(id);
+  el.style.display = 'grid';
+  el.classList.add('active');
+}
+
+// Recommendation engine
+function recommend() {
+  const workload = document.getElementById('q-workload').value;
+  const rto = document.getElementById('q-rto').value;
+  const rpo = document.getElementById('q-rpo').value;
+  const budget = parseInt(document.getElementById('q-budget').value);
+
+  if (!workload) { alert('Please select a workload type.'); return; }
+
+  let strategy = '';
+  let tips = [];
+
+  if (rto === 'zero' || rpo === 'zero') {
+    strategy = '🌍 Multi-Region Active-Active';
+    tips = [
+      'Deploy identical stacks in 2+ regions behind Global Load Balancer',
+      'Use CockroachDB, Cosmos DB, or Spanner for globally consistent writes',
+      'Anycast DNS (Cloudflare / Route53) for zero-latency failover',
+      'Stateless application tier with shared session store (Redis Enterprise Active-Active)',
+      'Budget: expect 80–120% increase in infrastructure spend'
+    ];
+  } else if (rto === 'minutes' && budget >= 40) {
+    strategy = '🔁 Multi-Region Active-Passive (Warm Standby)';
+    tips = [
+      'Keep a scaled-down replica stack live in your DR region at all times',
+      'Async database replication with &lt;1min lag (Aurora Global DB / Cosmos failover groups)',
+      'Route53 health checks trigger DNS cutover in under 60 seconds',
+      'Use Terraform or CDK to scale up DR environment on alarm',
+      'Budget: expect 40–60% increase in infrastructure spend'
+    ];
+  } else if (budget < 30 || rto === '30min') {
+    strategy = '🛡️ Pilot Light + Multi-AZ Primary';
+    tips = [
+      'Keep Multi-AZ enabled in primary region (handles most outages)',
+      'In DR region: keep only DB replica + pre-baked AMIs/images live',
+      'Auto Scaling Groups configured but at 0 — launch on disaster',
+      'Automate DR spin-up with Lambda or GitHub Actions workflow',
+      'Budget: expect 15–25% increase — most cost-effective HA approach'
+    ];
+  } else {
+    strategy = '⚡ Warm Standby';
+    tips = [
+      'Run a minimal (25% capacity) copy in DR region continuously',
+      'Synchronous or near-synchronous DB replication',
+      'Traffic manager routes to DR in &lt;5 minutes on health check failure',
+      'Scale up DR environment automatically with auto-scaling policies',
+      'Budget: expect 30–45% increase in infrastructure spend'
+    ];
+  }
+
+  // Add workload-specific tips
+  if (workload === 'db') tips.push('Enable point-in-time recovery (PITR) on all databases — minimum 7 day retention');
+  if (workload === 'storage') tips.push('Enable object versioning + cross-region replication + MFA delete protection');
+  if (workload === 'ml') tips.push('Store model artifacts in multi-region S3/GCS + checkpoint training runs frequently');
+  if (workload === 'streaming') tips.push('Deploy Kafka MirrorMaker 2 or AWS MSK cross-region replication');
+
+  document.getElementById('result-title').textContent = `Recommended: ${strategy}`;
+  const ul = document.getElementById('result-list');
+  ul.innerHTML = tips.map(t => `<li>${t}</li>`).join('');
+  const box = document.getElementById('result-box');
+  box.classList.remove('show');
+  void box.offsetWidth;
+  box.classList.add('show');
+}
+
+// Checklist
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  const icon = el.querySelector('.check-icon');
+  icon.textContent = el.classList.contains('checked') ? '✓' : '';
+  const checked = document.querySelectorAll('.checklist li.checked').length;
+  document.getElementById('progress').textContent = checked;
+}
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
